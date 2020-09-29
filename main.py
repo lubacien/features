@@ -10,6 +10,9 @@ sr = 44100
 audio  = MonoLoader(filename = filename,sampleRate =sr)()
 audio = normalize(audio)
 
+#we get limits and pitches from librosa
+C = 300
+limits, pitchdisc = extractpitchlimitslibrosa(audio,sr,C)
 
 
 #print(pitchtodiscrete(pitchcont,hopSize,sr,limits)[1])

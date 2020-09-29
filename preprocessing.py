@@ -45,30 +45,36 @@ def plotonoffsetspitch(audio, sr, length, plotoffset, limits, pitch = None, hopS
     times = np.array(range(audio.shape[0])) / sr  # librosa.times_like(audio)
 
     fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
 
-    #plotaudio
+    #plotaudio, offsets, onsets
     ax1.plot(times[0 + int(plotoffset * sr):int((plotoffset + length) * sr)],
-             audio[0 + int(plotoffset * sr):int((plotoffset + length) * sr)])
+             audio[0 + int(plotoffset * sr):int((plotoffset + length) * sr)],
+             )
+
+
 
     # plot offsets
     offsets = limits[:, 1]
-    ax1.plot(offsets[(offsets < length + plotoffset) & (offsets > plotoffset)],
-             np.ones(offsets[(offsets < length + plotoffset) & (offsets > plotoffset)].shape) * 0, marker='o',
+    ax1.scatter(offsets[(offsets < length + plotoffset) & (offsets > plotoffset)],
+             np.ones(offsets[(offsets < length + plotoffset) & (offsets > plotoffset)].shape), marker=(5,2), c='tab:red',
              linewidth=0)
 
     #plot onsets
     onsets = limits[:,0]
-    ax1.plot(onsets[(onsets < length + plotoffset) & (onsets > plotoffset)],
-             np.ones(onsets[(onsets < length + plotoffset) & (onsets > plotoffset)].shape) * 0, marker='o', linewidth=0)
+    ax1.scatter(onsets[(onsets < length + plotoffset) & (onsets > plotoffset)],
+             np.ones(onsets[(onsets < length + plotoffset) & (onsets > plotoffset)].shape), marker=(5,2), c='tab:green')
 
     #plot pitch
     if pitch is not None :
-        print('yo')
         pitchtime = np.array(range(int(np.floor(audio.shape[0] / hopSize)))) / (sr / hopSize)
-        ax2 = ax1.twinx()
-        ax2.plot(pitchtime[int(plotoffset * sr / hopSize):int((plotoffset + length) * sr / hopSize)],
-                 pitch[int(plotoffset * sr / hopSize):int((plotoffset + length) * sr / hopSize)], color='red')
+        ax3 = ax1.twinx()
+
+        color = 'tab:red'
+        ax3.plot(pitchtime[int(plotoffset * sr / hopSize):int((plotoffset + length) * sr / hopSize)],
+                 pitch[int(plotoffset * sr / hopSize):int((plotoffset + length) * sr / hopSize)], color=color)
+        ax3.set_ylabel('Frequency [Hz]', color=color)  # we already handled the x-label with ax1
+        ax3.tick_params(axis='y', labelcolor=color)
+
 
     plt.show()
 '''
