@@ -20,21 +20,26 @@ audio = MonoLoader(filename=filename,sampleRate = sr)()
 
 audio = normalize(audio)
 
-length = 10  # in seconds
-plotoffset = 0
+length = 2  # in seconds
+plotoffset = 1
 
 #Plotting librosa extraction:
 C = 300
 limits, pitchdisc = extractpitchlimitslibrosa(audio,sr,C)
-pitchcont = pitchtocontinuous(pitchdisc, audio, sr, limits)
-plotonoffsetspitch(audio, sr, length, plotoffset, limits, pitch = pitchcont)
 
+#writenotes('septguitar', audio, sr, limits)
+
+pitchcont = pitchtocontinuous(pitchdisc, audio, sr, limits)
+plotonoffsetspitch(audio, sr, 10, 1, limits, 'Separate extraction of onsets, offsets and pitches', pitch = pitchcont)
+
+#print(limits)
 plt.figure(2)
 
+'''
 #Plotting essentia extraction:
 hopSize = 128 #hopsize used to estimate pitch
 pitchcont, limits = extractpitchlimitsessentia(audio, sr, hopSize)
-plotonoffsetspitch(audio, sr, length, plotoffset, limits, pitchcont, hopSize)
-
+plotonoffsetspitch(audio, sr, length, plotoffset, limits, 'Joint extraction of onsets, offsets and pitches with essentia', pitchcont, hopSize)
+'''
 #Checking notes :
 # print(librosa.hz_to_note(pitchdisc))
