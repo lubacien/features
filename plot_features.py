@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from preprocessing import *
 from features import *
 
-names =['LeadVocal.mp3', 'guitarsept.mp3', 'DrumKit.mp3']
+#names =['LeadVocal_chain.mp3', 'LeadVocal_september.mp3', 'guitar_chain.mp3', 'guitar_september.mp3', 'DrumKit_chain.mp3', 'DrumKit_september.mp3', 'Bass_chain.mp3', 'Bass_september.mp3']
+names =['LeadVocal_chain.mp3']
 sr = 44100
 C = 300
 n_fft = 1024
@@ -17,7 +18,7 @@ inharmonicities = []
 harmonics = []
 
 for i in range(len(names)):
-
+    print(names[i])
     ZCR, centroid, bandwidth, inharmonicity, harmonic = calculate_track_features(names[i], sr, C, n_fft)
     ZCRs.append(ZCR)
     centroids.append(centroid)
@@ -53,6 +54,7 @@ def display(feature, name, save = False):
 def display_list(featurelist, name, namelist, save=False):
     # we want those distributions to be as small as possible, otherwise it means we have a big variety of the features
     # across different notes of the same song, therefore the features are useless.
+    save = True
     print(featurelist[0].shape)
     listmeans = []
     liststds = []
@@ -62,17 +64,23 @@ def display_list(featurelist, name, namelist, save=False):
 
     fig1, ax1 = plt.subplots()
     ax1.boxplot(listmeans)
-    namelist = [name[:-4] for name in namelist]
-    ax1.set_xticklabels((namelist))
+
+    ax1.set_xticklabels((namelist), rotation = 45, fontsize = 8)
     ax1.set_title('Distribution of the means of ' + name + ' across notes')
+    if save == True:
+        plt.savefig('plots/boxplots/mean_' + name)
     plt.show()
 
 
     fig2, ax2 = plt.subplots()
     ax2.boxplot(liststds)
-    ax2.set_xticklabels((namelist))
+    ax2.set_xticklabels((namelist), rotation = 45, fontsize = 8)
     ax2.set_title('Distribution of the standard deviations of ' + name + ' across notes')
+    if save == True:
+        plt.savefig('plots/boxplots/deviation_' + name)
     plt.show()
+
+names = [name[:-4] for name in names] #removing .mp3
 
 display_list(ZCRs, 'ZCR', names)
 display_list(centroids,'centroids', names)
