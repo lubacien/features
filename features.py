@@ -47,7 +47,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
 
 def calculate_track_features(filename, sr, C, n_fft):
 
-    audio  = MonoLoader(filename = filename,sampleRate =sr)()
+    audio  = MonoLoader(filename = filename, sampleRate =sr)()
     audio = normalize(audio)
 
     #we get limits and pitches from librosa
@@ -57,7 +57,13 @@ def calculate_track_features(filename, sr, C, n_fft):
     centroids = np.empty((limits.shape[0],2))
     bandwidths = np.empty((limits.shape[0],2))
     noteinharmonicities = np.empty((limits.shape[0],2))
-    noteharmonicpercentage = np.empty((limits.shape[0], 4, 2))
+    harmonicpercentage1 = np.empty((limits.shape[0],2))
+    harmonicpercentage2 = np.empty((limits.shape[0], 2))
+    harmonicpercentage3 = np.empty((limits.shape[0], 2))
+    harmonicpercentage4 = np.empty((limits.shape[0], 2))
+
+    #noteharmonicpercentage = np.empty((limits.shape[0], 4, 2))
+
 
     for i in range(limits.shape[0]):
         #note splitting
@@ -84,7 +90,58 @@ def calculate_track_features(filename, sr, C, n_fft):
         noteinharmonicities[i,0] = np.mean(inharmonicity)
         noteinharmonicities[i, 1] = np.std(inharmonicity)
 
-        noteharmonicpercentage[i, :, 0] = np.mean(harmonicpercentage, axis = 0)
-        noteharmonicpercentage[i, :, 1] = np.std(harmonicpercentage, axis= 0)
+        #noteharmonicpercentage[i, :, 0] = np.mean(harmonicpercentage, axis = 0)
+        #noteharmonicpercentage[i, :, 1] = np.std(harmonicpercentage, axis= 0)
 
-    return zerocrossingrates, centroids, bandwidths, noteinharmonicities, noteharmonicpercentage
+        harmonicpercentage1[i,0] = np.mean(harmonicpercentage[:,0])
+        harmonicpercentage1[i,1] = np.std(harmonicpercentage[:,0])
+
+        harmonicpercentage2[i, 0] = np.mean(harmonicpercentage[:, 1])
+        harmonicpercentage2[i, 1] = np.std(harmonicpercentage[:, 1])
+
+        harmonicpercentage3[i, 0] = np.mean(harmonicpercentage[:, 2])
+        harmonicpercentage3[i, 1] = np.std(harmonicpercentage[:, 2])
+
+        harmonicpercentage4[i, 0] = np.mean(harmonicpercentage[:, 3])
+        harmonicpercentage4[i, 1] = np.std(harmonicpercentage[:, 3])
+
+
+    features = np.array([zerocrossingrates, centroids, bandwidths, noteinharmonicities, harmonicpercentage1, harmonicpercentage2, harmonicpercentage3, harmonicpercentage4])
+    print (features.shape)
+    return features
+
+def calculate_tracks_features(filenames, sr, C, n_fft):
+    tracks = {}
+    notes = np.empty((8,0,2))
+    for filename in filenames:
+        print(filename)
+        tracks[filename] = calculate_track_features(filename,sr,C,n_fft)
+    return tracks, notes
+
+def feature_variance(tracks):
+    allnotes = np.empty((8,0,2))
+    intravariances = np.empty((len(tracks), 8, 2))
+    i=0
+    for filename in tracks.keys():
+        print(filename)
+        print(tracks[filename].shape)
+        allnotes = np.concatenate((allnotes, tracks[filename]), axis=1)
+        intravariances[i] = np.std(tracks[filename], axis = 1) #track, 8, 2
+        i = i+1
+
+    intervariance = np.std(allnotes, axis = 1)
+    print('intervariance:' +'\n'+  str(intervariance))
+    meanintravariance = np.mean(intravariances, axis = 0)
+    print('intravariance:' +'\n'+ str(meanintravariance))
+
+
+sr = 44100
+C = 300
+n_fft = 1024
+#filenames = ['data/September - Earth, Wind & Fire/*.mp3','data/September - Earth, Wind & Fire/*.mp3']
+filenames = ['data/September - Earth, Wind & Fire/Bass.mp3', 'data/September - Earth, Wind & Fire/Lead Vocal.mp3']
+tracks, notes = calculate_tracks_features(filenames, sr, C, n_fft)
+feature_variance(tracks)
+print('yes')
+
+print(notes.shape)
