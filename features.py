@@ -111,11 +111,13 @@ def calculate_track_features(filename, sr, C, n_fft):
     features = np.array([zerocrossingrates, centroids, bandwidths, noteinharmonicities, harmonicpercentage1, harmonicpercentage2, harmonicpercentage3, harmonicpercentage4])
     return features
 
-def calculate_tracks_features(filenames, sr, C, n_fft):
+def calculate_tracks_features(songnames, sr, C, n_fft):
     tracks = {}
-    for filename in filenames:
-        print(filename)
-        tracks[filename] = calculate_track_features(filename,sr,C,n_fft)
+    for songname in songnames:
+        filenames = os.listdir(str(args.indir) + '/' + songname)
+        for filename in filenames:
+            print(songname + '/' + filename)
+            tracks[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
     return tracks
 
 def feature_variance(tracks):
@@ -144,8 +146,9 @@ sr = 44100
 C = 300
 n_fft = 1024
 
-filenames = ['data/September - Earth, Wind & Fire/Bass.mp3', 'data/September - Earth, Wind & Fire/Lead Vocal.mp3']
-tracks = calculate_tracks_features(filenames, sr, C, n_fft)
+songnames = os.listdir(args.indir)
+
+tracks = calculate_tracks_features(songnames, sr, C, n_fft)
 
 #WRITE:
 filehandler = open('tracks.pkl', 'wb')
