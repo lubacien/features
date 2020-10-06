@@ -1,4 +1,6 @@
 from preprocessing import *
+from argparse import ArgumentParser
+import pickle
 
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
@@ -107,16 +109,14 @@ def calculate_track_features(filename, sr, C, n_fft):
 
 
     features = np.array([zerocrossingrates, centroids, bandwidths, noteinharmonicities, harmonicpercentage1, harmonicpercentage2, harmonicpercentage3, harmonicpercentage4])
-    print (features.shape)
     return features
 
 def calculate_tracks_features(filenames, sr, C, n_fft):
     tracks = {}
-    notes = np.empty((8,0,2))
     for filename in filenames:
         print(filename)
         tracks[filename] = calculate_track_features(filename,sr,C,n_fft)
-    return tracks, notes
+    return tracks
 
 def feature_variance(tracks):
     allnotes = np.empty((8,0,2))
@@ -134,14 +134,27 @@ def feature_variance(tracks):
     meanintravariance = np.mean(intravariances, axis = 0)
     print('intravariance:' +'\n'+ str(meanintravariance))
 
+if __name__ == '__main__':
+    argparser = ArgumentParser()
+    argparser.add_argument('--indir', type=str, default='raw_dataset',
+        help='directory where the tracks are')
+    args = argparser.parse_args()
 
 sr = 44100
 C = 300
 n_fft = 1024
-#filenames = ['data/September - Earth, Wind & Fire/*.mp3','data/September - Earth, Wind & Fire/*.mp3']
-filenames = ['data/September - Earth, Wind & Fire/Bass.mp3', 'data/September - Earth, Wind & Fire/Lead Vocal.mp3']
-tracks, notes = calculate_tracks_features(filenames, sr, C, n_fft)
-feature_variance(tracks)
-print('yes')
 
-print(notes.shape)
+filenames = ['data/September - Earth, Wind & Fire/Bass.mp3', 'data/September - Earth, Wind & Fire/Lead Vocal.mp3']
+tracks = calculate_tracks_features(filenames, sr, C, n_fft)
+
+#WRITE:
+filehandler = open('tracks.pkl', 'wb')
+pickle.dump(tracks, filehandler)
+filehandler.close()
+
+'''
+#READ:
+filereader = open('tracks.pkl', 'rb')
+tracks = pickle.load(filereader)
+feature_variance(tracks)
+'''
