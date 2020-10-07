@@ -1,6 +1,7 @@
 from preprocessing import *
 from argparse import ArgumentParser
 import pickle
+import time
 
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
@@ -117,7 +118,10 @@ def calculate_tracks_features(songnames, sr, C, n_fft):
         filenames = os.listdir(str(args.indir) + '/' + songname)
         for filename in filenames:
             print(songname + '/' + filename)
+            start = time.time()
             tracks[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
+            stop = time.time()
+            print('computed in '+ str(stop-start) + 's')
     return tracks
 
 def feature_variance(tracks):

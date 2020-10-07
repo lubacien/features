@@ -43,23 +43,21 @@ def makelimits(audio, sr,C ):
     #envelope = librosa.onset.onset_strength(audio, sr)
     onsets = librosa.onset.onset_detect(audio, sr, units='time', backtrack = True, hop_length = 256)
     #onsets = makeonsetsessentia(audio)
-
+    onsets = np.unique(onsets)
     limits = np.empty((onsets.shape[0] - 1, 2))
-    limits[:, 0] = onsets[0:onsets.shape[0] - 1]  # onsets
-    limits[:, 1] = onsets[1:onsets.shape[0]]  # soon offsets
 
     #offset detection:
     frame_length = 512
     hop_length = 128
-    for i in range(onsets.shape[0] - 1):
 
+    for i in range(onsets.shape[0] - 1):
+        limits[i,0] = onsets[i]
+        limits[i,1] = onsets[i+1]
         energy = librosa.feature.rms(y=audio[int(limits[i, 0] * sr): int(limits[i, 1] * sr)], frame_length=frame_length, hop_length = hop_length)
 
         total_energy = sum(sum(energy))
 
         amax = np.argmax(energy[0, 0 : int(energy[0].shape[0] / 2)])
-        #print(amax)
-        # a = np.searchsorted(energy[0],total_energy/1000, side='right')
 
         # we start from the maximum value  in the first half of the note (otherwise if onset is not well placed, it takes the next onset as maximum)
         # and decrease until we go under the minimum energy. This is the offset
@@ -79,8 +77,6 @@ def makelimits(audio, sr,C ):
                     print('offset = onset -> increase C')
                 break
         continue
-
-
 
     return limits
 
