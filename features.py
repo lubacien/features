@@ -15,6 +15,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
     harmonicpercentage = np.empty((0))
     inharmonicity = np.empty(0)
 
+
     for frame in FrameGenerator(note, frameSize=n_fft, hopSize=hop_length, startFromZero=True):
         # print('frame' + str(idx))
 
@@ -46,7 +47,12 @@ def calculate_note_features(note, sr, n_fft, pitch):
                                                               harmonicmag))  # should we first mean the frequencies and magnitudes, than give this to inharmonicity?
     harmonicpercentage = harmonicpercentage.reshape(-1,
                                                     4)  # gives second dimension, otherwise we do not know which harmonic peak it was.
-    return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage
+    logtime, start, stop = LogAttackTime()(note)
+    envelope = Envelope()(note)
+    envflat = FlatnessSFX()(envelope)
+    tempcentroid = TCToTotal()(envelope)
+
+    return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid
 
 def calculate_track_features(filename, sr, C, n_fft):
 
@@ -65,6 +71,11 @@ def calculate_track_features(filename, sr, C, n_fft):
     harmonicpercentage3 = np.empty((limits.shape[0], 2))
     harmonicpercentage4 = np.empty((limits.shape[0], 2))
 
+    #temporal features
+    logtimes= np.empty((limits.shape[0]))
+    envflats = np.empty((limits.shape[0]))
+    tempcentroids = np.empty((limits.shape[0]))
+
     #noteharmonicpercentage = np.empty((limits.shape[0], 4, 2))
 
 
@@ -72,7 +83,7 @@ def calculate_track_features(filename, sr, C, n_fft):
         #note splitting
         note = audio[int(limits[i, 0]*sr): int(limits[i, 1]*sr)]
 
-        ZCR, centroid, bandwidth, inharmonicity, harmonicpercentage = calculate_note_features(note, sr, n_fft, pitchdisc[i])
+        ZCR, centroid, bandwidth, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid = calculate_note_features(note, sr, n_fft, pitchdisc[i])
 
         #Zerocrossingrate
 
@@ -93,9 +104,6 @@ def calculate_track_features(filename, sr, C, n_fft):
         noteinharmonicities[i,0] = np.mean(inharmonicity)
         noteinharmonicities[i, 1] = np.std(inharmonicity)
 
-        #noteharmonicpercentage[i, :, 0] = np.mean(harmonicpercentage, axis = 0)
-        #noteharmonicpercentage[i, :, 1] = np.std(harmonicpercentage, axis= 0)
-
         harmonicpercentage1[i,0] = np.mean(harmonicpercentage[:,0])
         harmonicpercentage1[i,1] = np.std(harmonicpercentage[:,0])
 
@@ -110,6 +118,7 @@ def calculate_track_features(filename, sr, C, n_fft):
 
 
     features = np.array([zerocrossingrates, centroids, bandwidths, noteinharmonicities, harmonicpercentage1, harmonicpercentage2, harmonicpercentage3, harmonicpercentage4])
+
     return features
 
 def calculate_tracks_features(songnames, sr, C, n_fft):
