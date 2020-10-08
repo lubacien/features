@@ -4,6 +4,31 @@ from sklearn.decomposition import PCA
 import numpy as np
 import matplotlib.pyplot as plt
 
+def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
+    #see which tracks are present in the different clusters, make pie charts:
+
+    for i in range(n_clusters):
+
+        counts = np.array(np.unique(inst_labels[cluster_labels == i], return_counts= True))
+
+        fig, ax = plt.subplots()
+        slices = []
+        labels = []
+        for k in range(min(6, counts.shape[1])):
+            slices.append(max(counts[1]))
+            labels.append(counts[0][np.argmax(counts[1])])
+
+            counts = np.delete(counts, np.argmax(counts[1]), axis = 1)
+            print(counts)
+
+        slices.append(np.sum(counts[1]))
+
+        plt.figure()
+        labels = [str(inst_names[lab-1])[:-4] for lab in labels]
+        labels.append('others')
+        ax.pie(slices, labels = labels) #[str(track_names[lab][1]) + str(track_names[lab][0]) for lab in labels] )
+        plt.show()
+
 def trackstonotes_label(tracks):
 
     notes = np.concatenate(list(tracks.values()), axis=0)
@@ -47,52 +72,14 @@ feature_variance(tracks)
 
 #Cluster into categories, then see which tracks TYPES appear most in those categories
 
-notes, track_labels, track_names = trackstonotes_label(tracks)
-
+notes, inst_labels, inst_names = trackstonotes_label(tracks)
 
 #KMEANS CLUSTERING:
 nclusters = 5
 kmeans = KMeans(n_clusters = nclusters).fit(notes)# we have 25 different tracks. for each tracks, we want to know which label kmeans put on them.
 
-'''
-#see which clusters are present in the different tracks:
-i = 1
-for track in tracks.keys():
-    print(track)
-    print(kmeans.labels_[np.where(track_labels == i)])
-    print(np.unique(kmeans.labels_[np.where(track_labels == i)], return_counts= True))
+display_clusters(nclusters, inst_labels, inst_names,  kmeans.labels_)
 
-    fig, axs = plt.subplots(1, 3, figsize=(9, 3), sharey=True)
-    axs[0].bar(names, values)
-    plt.figure()
-    plt.show()
-    i = i + 1
-'''
-
-#see which tracks are present in the different clusters:
-for i in range(nclusters):
-    print(track_labels[kmeans.labels_ == i])
-    counts = np.array(np.unique(track_labels[kmeans.labels_ == i], return_counts= True))
-    print(counts)
-    print(counts[0].shape)
-    fig, ax = plt.subplots()
-
-    slices = []
-    labels = []
-    for k in range(min(5, counts.shape[1])):
-        slices.append(max(counts[1]))
-        labels.append(counts[0][np.argmax(counts[1])])
-
-        counts = np.delete(counts, np.argmax(counts[1]), axis = 1)
-        print(counts)
-
-    slices.append(np.sum(counts[1]))
-
-    plt.figure()
-    labels = [str(track_names[lab-1][1])[:-4] for lab in labels]
-    labels.append('others')
-    ax.pie(slices, labels = labels) #[str(track_names[lab][1]) + str(track_names[lab][0]) for lab in labels] )
-    plt.show()
 
 '''    # Adapt radius and text size for a smaller pie
     patches, texts, autotexts = axs[1, 0].pie(fracs, labels=labels,
