@@ -15,7 +15,6 @@ def calculate_note_features(note, sr, n_fft, pitch):
     harmonicpercentage = np.empty((0))
     inharmonicity = np.empty(0)
 
-
     for frame in FrameGenerator(note, frameSize=n_fft, hopSize=hop_length, startFromZero=True):
         # print('frame' + str(idx))
 
@@ -62,92 +61,36 @@ def calculate_track_features(filename, sr, C, n_fft):
     #we get limits and pitches from librosa
     limits, pitchdisc = extractpitchlimitslibrosa(audio,sr,C)
 
-    zerocrossingrates = np.empty((limits.shape[0],2))
-    centroids = np.empty((limits.shape[0],2))
-    bandwidths = np.empty((limits.shape[0],2))
-    noteinharmonicities = np.empty((limits.shape[0],2))
-    harmonicpercentage1 = np.empty((limits.shape[0],2))
-    harmonicpercentage2 = np.empty((limits.shape[0], 2))
-    harmonicpercentage3 = np.empty((limits.shape[0], 2))
-    harmonicpercentage4 = np.empty((limits.shape[0], 2))
-
-    #temporal features
-    logtimes= np.empty((limits.shape[0]))
-    envflats = np.empty((limits.shape[0]))
-    tempcentroids = np.empty((limits.shape[0]))
-
     #noteharmonicpercentage = np.empty((limits.shape[0], 4, 2))
 
-
+    features = np.empty((limits.shape[0], 19))
     for i in range(limits.shape[0]):
         #note splitting
         note = audio[int(limits[i, 0]*sr): int(limits[i, 1]*sr)]
 
         ZCR, centroid, bandwidth, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid = calculate_note_features(note, sr, n_fft, pitchdisc[i])
 
-        #Zerocrossingrate
-
-        zerocrossingrates[i,0] = np.mean(ZCR)
-        zerocrossingrates[i,1] = np.std(ZCR)
-
-        #Spectral Features
-
-        centroids[i,0] = np.mean(centroid)
-        centroids[i,1] = np.std(centroid)
-
-        bandwidths[i,0] = np.mean(bandwidth)
-        bandwidths[i,1] = np.std(bandwidth)
-
-        #Harmonic Features
-
-        #print('inhamronicity' + str(inharmonicity))
-        noteinharmonicities[i,0] = np.mean(inharmonicity)
-        noteinharmonicities[i, 1] = np.std(inharmonicity)
-
-        harmonicpercentage1[i,0] = np.mean(harmonicpercentage[:,0])
-        harmonicpercentage1[i,1] = np.std(harmonicpercentage[:,0])
-
-        harmonicpercentage2[i, 0] = np.mean(harmonicpercentage[:, 1])
-        harmonicpercentage2[i, 1] = np.std(harmonicpercentage[:, 1])
-
-        harmonicpercentage3[i, 0] = np.mean(harmonicpercentage[:, 2])
-        harmonicpercentage3[i, 1] = np.std(harmonicpercentage[:, 2])
-
-        harmonicpercentage4[i, 0] = np.mean(harmonicpercentage[:, 3])
-        harmonicpercentage4[i, 1] = np.std(harmonicpercentage[:, 3])
-
-
-    features = np.array([zerocrossingrates, centroids, bandwidths, noteinharmonicities, harmonicpercentage1, harmonicpercentage2, harmonicpercentage3, harmonicpercentage4])
+        features[i] = np.array([np.mean(ZCR), np.std(ZCR), np.mean(centroid), np.std(centroid),
+                                np.mean(bandwidth), np.std(bandwidth), np.mean(inharmonicity), np.mean(inharmonicity),
+                                 np.mean(harmonicpercentage[:,0]), np.std(harmonicpercentage[:,0]),
+                                 np.mean(harmonicpercentage[:, 1]), np.std(harmonicpercentage[:, 1]),
+                                 np.mean(harmonicpercentage[:, 2]), np.std(harmonicpercentage[:, 2]),
+                                 np.mean(harmonicpercentage[:, 3]), np.std(harmonicpercentage[:, 3]),
+                                logtime, envflat, tempcentroid ])
 
     return features
 
 def calculate_tracks_features(songnames, sr, C, n_fft):
-    tracks = {}
+    instruments = {}
     for songname in songnames:
         filenames = os.listdir(str(args.indir) + '/' + songname)
         for filename in filenames:
             print(songname + '/' + filename)
             start = time.time()
-            tracks[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
+            instruments[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
             stop = time.time()
-            print('computed in '+ str(stop-start) + 's')
-    return tracks
-
-def feature_variance(tracks):
-    allnotes = np.empty((8,0,2))
-    intravariances = np.empty((len(tracks), 8, 2))
-    i=0
-    for filename in tracks.keys():
-        print(filename)
-        print(tracks[filename].shape)
-        allnotes = np.concatenate((allnotes, tracks[filename]), axis=1)
-        intravariances[i] = np.std(tracks[filename], axis = 1) #track, 8, 2
-        i = i+1
-
-    intervariance = np.std(allnotes, axis = 1)
-    print('intervariance:' +'\n'+  str(intervariance))
-    meanintravariance = np.mean(intravariances, axis = 0)
-    print('intravariance:' +'\n'+ str(meanintravariance))
+            print('computed in '+  str(stop-start) + 's')
+    return instruments
 
 if __name__ == '__main__':
     argparser = ArgumentParser()
@@ -161,16 +104,10 @@ n_fft = 1024
 
 songnames = os.listdir(args.indir)
 
-tracks = calculate_tracks_features(songnames, sr, C, n_fft)
-
 #WRITE:
-filehandler = open('tracks.pkl', 'wb')
+instruments = calculate_tracks_features(songnames, sr, C, n_fft)
+picklename = 'instruments.pkl'
+filehandler = open(picklename, 'wb')
 pickle.dump(tracks, filehandler)
+print('file written at '+ str(picklename))
 filehandler.close()
-
-'''
-#READ:
-filereader = open('tracks.pkl', 'rb')
-tracks = pickle.load(filereader)
-feature_variance(tracks)
-'''
