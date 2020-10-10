@@ -54,7 +54,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
 
     return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid
 
-@jit(target= 'gpu')
+@jit(target= 'cuda')
 def calculate_track_features(filename, sr, C, n_fft):
 
     audio  = MonoLoader(filename = filename, sampleRate =sr)()
