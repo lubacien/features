@@ -4,7 +4,7 @@ import pickle
 import time
 from numba import jit, cuda
 
-@jit(target ="cuda:0")
+
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
 
@@ -55,7 +55,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
 
     return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid
 
-@jit(target ="cuda:0")
+@jit(target ="cuda")
 def calculate_track_features(filename, sr, C, n_fft):
 
     audio  = MonoLoader(filename = filename, sampleRate =sr)()
@@ -83,7 +83,6 @@ def calculate_track_features(filename, sr, C, n_fft):
 
     return features
 
-@jit(target ="cuda:0")
 def calculate_tracks_features(songnames, sr, C, n_fft):
     instruments = {}
     for songname in songnames:
@@ -109,7 +108,7 @@ n_fft = 1024
 songnames = os.listdir(args.indir)
 
 
-#WRITE:
+#W@jit(target ="cuda")
 instruments = calculate_tracks_features(songnames, sr, C, n_fft)
 picklename = 'instruments.pkl'
 filehandler = open(picklename, 'wb')
