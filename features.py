@@ -2,6 +2,7 @@ from preprocessing import *
 from argparse import ArgumentParser
 import pickle
 import time
+import torch
 
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
