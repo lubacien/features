@@ -104,6 +104,9 @@ n_fft = 1024
 
 songnames = os.listdir(args.indir)
 
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda:0" if use_cuda else 'cpu')
+
 #WRITE:
 instruments = calculate_tracks_features(songnames, sr, C, n_fft)
 picklename = 'instruments.pkl'
