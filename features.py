@@ -82,7 +82,6 @@ def calculate_track_features(filename, sr, C, n_fft):
 
     return features
 
-@jit(target ="cuda")
 def calculate_tracks_features(songnames, sr, C, n_fft):
     instruments = {}
     for songname in songnames:
