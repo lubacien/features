@@ -5,7 +5,6 @@ import time
 import torch
 
 
-@jit(target ="cuda")
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
 
@@ -56,7 +55,6 @@ def calculate_note_features(note, sr, n_fft, pitch):
 
     return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid
 
-@jit(target ="cuda")
 def calculate_track_features(filename, sr, C, n_fft):
 
     audio  = MonoLoader(filename = filename, sampleRate =sr)()
