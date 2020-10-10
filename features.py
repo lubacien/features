@@ -2,9 +2,9 @@ from preprocessing import *
 from argparse import ArgumentParser
 import pickle
 import time
-import torch
+from numba import jit, cuda
 
-
+@jit(target ="cuda")
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
 
@@ -55,6 +55,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
 
     return ZCR, centroids, bandwidths, inharmonicity, harmonicpercentage, logtime, envflat, tempcentroid
 
+@jit(target ="cuda")
 def calculate_track_features(filename, sr, C, n_fft):
 
     audio  = MonoLoader(filename = filename, sampleRate =sr)()
@@ -82,6 +83,7 @@ def calculate_track_features(filename, sr, C, n_fft):
 
     return features
 
+@jit(target ="cuda")
 def calculate_tracks_features(songnames, sr, C, n_fft):
     instruments = {}
     for songname in songnames:
@@ -106,11 +108,6 @@ n_fft = 1024
 
 songnames = os.listdir(args.indir)
 
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda:0" if use_cuda else 'cpu')
-torch.cuda.set_device(device)
-print('use_cuda' + str(use_cuda))
-print('cudadevice' + str(device))
 
 #WRITE:
 instruments = calculate_tracks_features(songnames, sr, C, n_fft)
