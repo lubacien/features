@@ -107,6 +107,8 @@ songnames = os.listdir(args.indir)
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else 'cpu')
+print('use_cuda' + str(use_cuda))
+print('cudadevice' + str(device))
 
 #WRITE:
 instruments = calculate_tracks_features(songnames, sr, C, n_fft)
