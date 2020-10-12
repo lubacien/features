@@ -120,7 +120,7 @@ songnames = os.listdir(args.indir)
 instruments = {}
 
 #WITH THREADS
-with concurrent.futures.ThreadPoolExecutor() as executor:
+with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
     start1 = time.time()
     songs = executor.map(calculate_tracks_features, songnames)
 
