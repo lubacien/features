@@ -9,7 +9,6 @@ import concurrent.futures
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
 
-
     # zerocrossingrates of all windows of all notes are put together
     ZCR = librosa.feature.zero_crossing_rate(note, frame_length=2048, hop_length=512)  # 46ms like in paper.
 
@@ -24,10 +23,11 @@ def calculate_note_features(note, sr, n_fft, pitch):
         # print('frame' + str(idx))
 
         window = Windowing(type='blackmanharris92')(frame)
-        spectrum = Spectrum(size=n_fft)(window)
-        # spectrum = np.delete(spectrum, np.where(spectrum == 0))
-        specdb = 10 * np.log10(spectrum / min(s for s in spectrum if s > 0))
-        frequencies, magnitudes = SpectralPeaks(maxPeaks=100, sampleRate=sr)(
+        windowfilt = DCRemoval(sampleRate = sr)(window)
+        spectrum = Spectrum(size=n_fft)(windowfilt)
+
+        specdb = (20 * np.log10(spectrum))/(-60)
+        frequencies, magnitudes = SpectralPeaks(maxPeaks=10, sampleRate=sr)(
             specdb)  # should be in dB, and best with blackmanharriswindow with 92db
 
         magnitudes = np.delete(magnitudes, np.where(frequencies == 0))
@@ -52,8 +52,9 @@ def calculate_note_features(note, sr, n_fft, pitch):
     harmonicpercentage = harmonicpercentage.reshape(-1,
                                                     4)  # gives second dimension, otherwise we do not know which harmonic peak it was.
 
-    logtime, start, stop = LogAttackTime()(note)
+
     envelope = Envelope()(note)
+    logtime, start, stop = LogAttackTime(sampleRate = sr)(envelope)
     envflat = FlatnessSFX()(envelope)
     tempcentroid = TCToTotal()(envelope)
 
@@ -104,7 +105,7 @@ def calculate_tracks_features(songname):
 
 if __name__ == '__main__':
     argparser = ArgumentParser()
-    argparser.add_argument('--indir', type=str, default='raw_dataset',
+    argparser.add_argument('--indir', type=str, default='data',
         help='directory where the tracks are')
     args = argparser.parse_args()
 

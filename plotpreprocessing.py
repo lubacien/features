@@ -21,7 +21,7 @@ audio = MonoLoader(filename=filename,sampleRate = sr)()
 audio = normalize(audio)
 
 length = 7  # in seconds
-plotoffset = 18
+plotoffset = 58
 
 #Plotting librosa extraction:
 C = 300

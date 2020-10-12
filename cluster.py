@@ -57,7 +57,7 @@ def trackstonotes_label(tracks):
     inst_names = list()
     label = 0
     for filename in tracks.keys():
-        inst_names.append(filename)
+        inst_names.append(filename[:-4])
         for j in range(tracks[filename].shape[0]):
             labels.append(label)
         label = label + 1
@@ -83,10 +83,21 @@ def feature_variance(tracks):
     #print('intravariance:' +'\n'+ str(meanintravariance))
     print('intervariance/intravariance ratio:' + '\n' + str(intervariance/meanintravariance))
 
-def plot_dendrogram(model, **kwargs):
-    # Create linkage matrix and then plot the dendrogram
 
-    # create the counts of samples under each node
+
+def hierarchical_clustering(notes, inst_labels, inst_names):
+    # hierarchical clustering
+    model = AgglomerativeClustering(distance_threshold=30000, n_clusters=None)
+
+    print(len([np.mean(notes[inst_labels == i], axis=0) for i in range(len(inst_names))]))
+    print(len([np.mean(notes[inst_labels == i], axis=0) for i in range(len(inst_names))][0]))
+    model = model.fit([np.mean(notes[inst_labels == i], axis=0) for i in
+                       range(len(inst_names))])  # we are clustering instruments, not notes
+
+    print(model.n_clusters_)
+
+    plt.title('Hierarchical Clustering Dendrogram of the instruments')
+    # plot the top three levels of the dendrogram
     counts = np.zeros(model.children_.shape[0])
     n_samples = len(model.labels_)
     for i, merge in enumerate(model.children_):
@@ -100,47 +111,33 @@ def plot_dendrogram(model, **kwargs):
 
     linkage_matrix = np.column_stack([model.children_, model.distances_,
                                       counts]).astype(float)
-
+    print(model.children_)
     # Plot the corresponding dendrogram
-    dendrogram(linkage_matrix, **kwargs,leaf_font_size=8)
+    dendrogram(linkage_matrix, leaf_font_size=8, labels=inst_names, leaf_rotation=0, orientation='right')
 
+    plt.show()
 
 np.set_printoptions(suppress= True)
 #READ:
-filereader = open('instruments_threads.pkl', 'rb')
-tracks = pickle.load(filereader)
-feature_variance(tracks)
+filereader = open('instruments.pkl', 'rb')
+instruments = pickle.load(filereader)
+feature_variance(instruments)
 
 #question: if we compute clusters with the same number as the number of tracks, can we refind tracks?
 #plot pca in 2d
 
 #Cluster into categories, then see which tracks TYPES appear most in those categories
 
-notes, inst_labels, inst_names = trackstonotes_label(tracks)
+notes, inst_labels, inst_names = trackstonotes_label(instruments)
+hierarchical_clustering(notes, inst_labels, inst_names)
 
+'''
 #KMEANS CLUSTERING:
-nclusters = 4
+nclusters = 10
 kmeans = KMeans(n_clusters = nclusters).fit(notes)# we have 25 different tracks. for each tracks, we want to know which label kmeans put on them.
 
 display_clusters(nclusters, inst_labels, inst_names,  kmeans.labels_)
 
-
-
-'''
-
-#hierarchical clustering
-model = AgglomerativeClustering(distance_threshold=30000, n_clusters=None)
-
-model = model.fit(notes)
-
-print(model.n_clusters_)
-display_clusters(model.n_clusters_, inst_labels, inst_names, model.labels_)
-
-plt.title('Hierarchical Clustering Dendrogram')
-# plot the top three levels of the dendrogram
-plot_dendrogram(model, truncate_mode='level', p=3)
-plt.xlabel("Number of points in node (or index of point if no parenthesis).")
-plt.show()
 '''
 
 '''
