@@ -3,13 +3,16 @@ from argparse import ArgumentParser
 import pickle
 import time
 from numba import jit, cuda
+import concurrent.futures
 
 
 def calculate_note_features(note, sr, n_fft, pitch):
     hop_length = int(n_fft / 2)
 
+
     # zerocrossingrates of all windows of all notes are put together
     ZCR = librosa.feature.zero_crossing_rate(note, frame_length=2048, hop_length=512)  # 46ms like in paper.
+
     Spectrogramnote = np.abs(librosa.stft(note, n_fft=n_fft, hop_length=hop_length))
     centroids = librosa.feature.spectral_centroid(S=Spectrogramnote, sr=sr)
     bandwidths = librosa.feature.spectral_bandwidth(S=Spectrogramnote, sr=sr)
@@ -48,6 +51,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
                                                               harmonicmag))  # should we first mean the frequencies and magnitudes, than give this to inharmonicity?
     harmonicpercentage = harmonicpercentage.reshape(-1,
                                                     4)  # gives second dimension, otherwise we do not know which harmonic peak it was.
+
     logtime, start, stop = LogAttackTime()(note)
     envelope = Envelope()(note)
     envflat = FlatnessSFX()(envelope)
@@ -58,6 +62,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
 def calculate_track_features(filename, sr, C, n_fft):
     st=time.time()
     audio  = MonoLoader(filename = filename, sampleRate =sr)()
+    #audio = librosa.core.load(path = filename, sr = sr) #cannot read mp3
     end = time.time()
     print(str(end-st)+ ' seconds to load')
     audio = normalize(audio)
@@ -84,16 +89,16 @@ def calculate_track_features(filename, sr, C, n_fft):
 
     return features
 
-def calculate_tracks_features(songnames, sr, C, n_fft):
+def calculate_tracks_features(songname):
     instruments = {}
-    for songname in songnames:
-        filenames = os.listdir(str(args.indir) + '/' + songname)
-        for filename in filenames:
-            print(songname + '/' + filename)
-            start = time.time()
-            instruments[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
-            stop = time.time()
-            print('computed in '+  str(stop-start) + 's')
+
+    filenames = os.listdir(str(args.indir) + '/' + songname)
+    for filename in filenames:
+        print(songname + '/' + filename)
+        start = time.time()
+        instruments[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
+        stop = time.time()
+        print('computed in '+  str(stop-start) + 's')
 
     return instruments
 
@@ -103,18 +108,38 @@ if __name__ == '__main__':
         help='directory where the tracks are')
     args = argparser.parse_args()
 
-sr = 44100
+
+sr =22050
 C = 300
 n_fft = 1024
 
 songnames = os.listdir(args.indir)
 
 #instruments = calculate_tracks_features(songnames, sr, C, n_fft)
+instruments = {}
 
-calculate_tracks_features[songnames]
+#WITH THREADS
+with concurrent.futures.ThreadPoolExecutor() as executor:
+    start1 = time.time()
+    songs = executor.map(calculate_tracks_features, songnames)
 
+    for song in songs:
+        for inst in song.keys():
+            instruments[inst] = song[inst]
+            print(inst + 'written in instruments')
+    stop1 = time.time()
+'''
+#WITHOUT THREADS:
+start1 = time.time()
+for songname in songnames:
+    song = calculate_tracks_features(songname)
+    for inst in song.keys():
+        instruments[inst] = song[inst]
+stop1 = time.time()
+'''
+print('full computation in ' + str(stop1-start1))
 picklename = 'instruments.pkl'
 filehandler = open(picklename, 'wb')
-pickle.dump(tracks, filehandler)
-print('file written at '+ str(picklename))
+pickle.dump(instruments, filehandler)
+print('file written at ' + str(picklename))
 filehandler.close()

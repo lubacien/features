@@ -21,9 +21,7 @@ def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
     for i in range(n_clusters):
 
         counts = np.array(np.unique(inst_labels[cluster_labels == i], return_counts= True))#number of occurences of each instrument inside the cluster.
-        print(np.unique(inst_labels,return_counts=True))
-        print(i)
-        print(counts)
+
         clustercounts = sum(counts[1])
 
         slices = [] #number of notes in each slice
@@ -33,10 +31,7 @@ def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
             slice = max(counts[1])
             slices.append(slice)
             label = counts[0][np.argmax(counts[1])]
-            print('yo')
-            print(label)
-            print([inst_labels == label])
-            print(np.sum([inst_labels == label]))
+
             percent = int((slice/np.sum([inst_labels == label]) ) *100)#percentage of the instrument's notes represented in each slice
             labels.append(str(inst_names[label])[:-4] + ' ' + str(percent) + '%')#inst_names starts from 1, labels of kmeans starts from 0 -> lab-1, labels of dendrogram from 0
             counts = np.delete(counts, np.argmax(counts[1]), axis = 1)
@@ -112,7 +107,7 @@ def plot_dendrogram(model, **kwargs):
 
 np.set_printoptions(suppress= True)
 #READ:
-filereader = open('trackschainsep.pkl', 'rb')
+filereader = open('instruments_threads.pkl', 'rb')
 tracks = pickle.load(filereader)
 feature_variance(tracks)
 
@@ -122,7 +117,6 @@ feature_variance(tracks)
 #Cluster into categories, then see which tracks TYPES appear most in those categories
 
 notes, inst_labels, inst_names = trackstonotes_label(tracks)
-
 
 #KMEANS CLUSTERING:
 nclusters = 4
