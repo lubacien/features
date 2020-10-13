@@ -94,20 +94,20 @@ def calculate_tracks_features(songname):
     filenames = os.listdir(str(args.indir) + '/' + songname)
     print(filenames)
     song = {}
-    if not os.path.exists(args.outdir + '/' + songname):
-        os.makedirs(args.outdir + '/' + songname)
+    if not os.path.exists(args.outdir + '/' + songname +'.pkl'):
+
         start = time.time()
         print('computing ' + str(args.indir) + '/' + songname)
         for filename in filenames:
             song[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
 
         stop = time.time()
-        print(songname + '/' + filename)
+        print(songname)
         print('computed in '+  str(stop-start) + 's')
 
-        picklename = songname + '.pkl'
+        picklename = args.outdir +'/' +songname + '.pkl'
         filehandler = open(picklename, 'wb')
-        pickle.dump(instruments, filehandler)
+        pickle.dump(song, filehandler)
         print('file written at ' + str(picklename))
         filehandler.close()
 
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     argparser.add_argument('--indir', type=str, default='data',
         help='directory where the tracks are')
     argparser.add_argument('--outdir', type=str, default='outdicts',
-                           help='directory where the tracks are')
+                           help='directory where the dictionaries are written')
     args = argparser.parse_args()
 
 
@@ -128,7 +128,6 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
 
     songnames = os.listdir(args.indir)
-    print(songnames)
     #instruments = calculate_tracks_features(songnames, sr, C, n_fft)
 
     #WITH THREADS

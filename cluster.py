@@ -120,7 +120,8 @@ def hierarchical_clustering(notes, inst_labels, inst_names):
 def aggregate(datadir):
     songdicts = os.listdir(datadir)
     for songdict in songdicts:
-        filereader = open('instruments.pkl', 'rb')
+        filereader = open(songdict, 'rb')
+        song = pickle.load(filereader)
 
 np.set_printoptions(suppress= True)
 #READ:
