@@ -117,6 +117,11 @@ def hierarchical_clustering(notes, inst_labels, inst_names):
 
     plt.show()
 
+def aggregate(datadir):
+    songdicts = os.listdir(datadir)
+    for songdict in songdicts:
+        filereader = open('instruments.pkl', 'rb')
+
 np.set_printoptions(suppress= True)
 #READ:
 filereader = open('instruments.pkl', 'rb')

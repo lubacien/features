@@ -52,7 +52,6 @@ def calculate_note_features(note, sr, n_fft, pitch):
     harmonicpercentage = harmonicpercentage.reshape(-1,
                                                     4)  # gives second dimension, otherwise we do not know which harmonic peak it was.
 
-
     envelope = Envelope()(note)
     logtime, start, stop = LogAttackTime(sampleRate = sr)(envelope)
     envflat = FlatnessSFX()(envelope)
@@ -91,44 +90,60 @@ def calculate_track_features(filename, sr, C, n_fft):
     return features
 
 def calculate_tracks_features(songname):
-    instruments = {}
 
     filenames = os.listdir(str(args.indir) + '/' + songname)
-    for filename in filenames:
-        print(songname + '/' + filename)
+    print(filenames)
+    song = {}
+    if not os.path.exists(args.outdir + '/' + songname):
+        os.makedirs(args.outdir + '/' + songname)
         start = time.time()
-        instruments[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
+        print('computing ' + str(args.indir) + '/' + songname)
+        for filename in filenames:
+            song[filename] = calculate_track_features(str(args.indir) + '/' + songname + '/' + filename, sr, C, n_fft)
+
         stop = time.time()
+        print(songname + '/' + filename)
         print('computed in '+  str(stop-start) + 's')
 
-    return instruments
+        picklename = songname + '.pkl'
+        filehandler = open(picklename, 'wb')
+        pickle.dump(instruments, filehandler)
+        print('file written at ' + str(picklename))
+        filehandler.close()
 
 if __name__ == '__main__':
     argparser = ArgumentParser()
     argparser.add_argument('--indir', type=str, default='data',
         help='directory where the tracks are')
+    argparser.add_argument('--outdir', type=str, default='outdicts',
+                           help='directory where the tracks are')
     args = argparser.parse_args()
 
 
-sr =22050
-C = 300
-n_fft = 1024
+    sr =22050
+    C = 300
+    n_fft = 1024
 
-songnames = os.listdir(args.indir)
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
 
-#instruments = calculate_tracks_features(songnames, sr, C, n_fft)
-instruments = {}
+    songnames = os.listdir(args.indir)
+    print(songnames)
+    #instruments = calculate_tracks_features(songnames, sr, C, n_fft)
 
-#WITH THREADS
-with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-    start1 = time.time()
-    songs = executor.map(calculate_tracks_features, songnames)
+    #WITH THREADS
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        start1 = time.time()
+        executor.map(calculate_tracks_features, songnames)
 
+    '''
     for song in songs:
         for inst in song.keys():
             instruments[inst] = song[inst]
             print(inst + 'written in instruments')
     stop1 = time.time()
+    '''
+
 '''
 #WITHOUT THREADS:
 start1 = time.time()
@@ -138,9 +153,4 @@ for songname in songnames:
         instruments[inst] = song[inst]
 stop1 = time.time()
 '''
-print('full computation in ' + str(stop1-start1))
-picklename = 'instruments.pkl'
-filehandler = open(picklename, 'wb')
-pickle.dump(instruments, filehandler)
-print('file written at ' + str(picklename))
-filehandler.close()
+
