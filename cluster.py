@@ -5,6 +5,8 @@ from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import plotly.graph_objects as go
 
 def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
     #see which tracks are present in the different clusters, make pie charts:
@@ -81,7 +83,9 @@ def feature_variance(tracks):
     #print('intervariance:' +'\n' + str(intervariance))
     meanintravariance = np.mean(intravariances, axis = 0)
     #print('intravariance:' +'\n'+ str(meanintravariance))
+    np.set_printoptions(suppress=True)
     print('intervariance/intravariance ratio:' + '\n' + str(intervariance/meanintravariance))
+
 
 
 
@@ -111,30 +115,61 @@ def hierarchical_clustering(notes, inst_labels, inst_names):
 
     linkage_matrix = np.column_stack([model.children_, model.distances_,
                                       counts]).astype(float)
-    print(model.children_)
     # Plot the corresponding dendrogram
-    dendrogram(linkage_matrix, leaf_font_size=8, labels=inst_names, leaf_rotation=0, orientation='right')
+    plt.figure(figsize=(20, 30))
+    dendrogram(linkage_matrix, leaf_font_size=10, labels=inst_names, leaf_rotation=0, orientation='right')
 
     plt.show()
 
 def aggregate(datadir):
     songdicts = os.listdir(datadir)
+    print(songdicts)
+    instruments = {}
     for songdict in songdicts:
-        filereader = open(songdict, 'rb')
+        filereader = open(datadir+'/'+songdict, 'rb')
         song = pickle.load(filereader)
+        for inst in song.keys():
+            if instruments.get(inst, None) is None:
+                instruments[inst] = np.empty((0,19))
+            instruments[inst] = np.concatenate((instruments[inst], song[inst]), axis = 0)
+    return instruments
 
-np.set_printoptions(suppress= True)
-#READ:
-filereader = open('instruments.pkl', 'rb')
-instruments = pickle.load(filereader)
+def feature_table(features):
+    np.set_printoptions(precision = 4)
+    fig = go.Figure(data=[go.Table(header=dict(values=['zcr_mean','zcr_std']),
+                     cells=dict(values = features))])
+    fig.show()
+
+#READ FULL:
+#filereader = open('instruments.pkl', 'rb')
+#instruments = pickle.load(filereader)
+#print os.path.getsize('instruments.pkl')
+#READ SEPARATE:
+instruments = aggregate('pre-results')
+notes, inst_labels, inst_names = trackstonotes_label(instruments)
+
+#Features:
+
 feature_variance(instruments)
 
+#PCA:
+#variance normalization, all variances = 1 (for pca):
+notespca = notes/np.std(notes, axis = 0)
+
+pca = PCA().fit(notespca)
+print(pca.explained_variance_ratio_)
+print(pca.singular_values_)
+print(pca.components_)
+
+feature_table(pca.components_[0])
 #question: if we compute clusters with the same number as the number of tracks, can we refind tracks?
 #plot pca in 2d
 
 #Cluster into categories, then see which tracks TYPES appear most in those categories
 
-notes, inst_labels, inst_names = trackstonotes_label(instruments)
+
+#Cluster:
+print(np.unique(inst_labels))
 hierarchical_clustering(notes, inst_labels, inst_names)
 
 '''
@@ -147,14 +182,15 @@ display_clusters(nclusters, inst_labels, inst_names,  kmeans.labels_)
 '''
 
 '''
+#PCA_PLOTTING:
 #variance normalization, all variances = 1 (for pca):
 notes = notes/np.std(notes, axis = 0)
 
-#PCA:
 pca = PCA(n_components = 2, whiten = False).fit(notes) # we whiten because the variances are very different between features.
 print(pca.explained_variance_ratio_)#The amount of variance explained by each of the selected components.
 print('pca components:')
 print(pca.components_) #Principal axes in feature space, representing the directions of maximum variance in the data. The components are sorted by explained_variance_.
+
 
 fig, (ax1) = plt.subplots()
 fig2, (ax2) = plt.subplots()
@@ -166,5 +202,6 @@ legend1 = ax1.legend(*scatter.legend_elements(),
 legend2 = ax2.legend(*scatter2.legend_elements(),
                     loc="upper right", title="tracks")
 plt.show()
-
 '''
+
+

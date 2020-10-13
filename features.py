@@ -92,7 +92,6 @@ def calculate_track_features(filename, sr, C, n_fft):
 def calculate_tracks_features(songname):
 
     filenames = os.listdir(str(args.indir) + '/' + songname)
-    print(filenames)
     song = {}
     if not os.path.exists(args.outdir + '/' + songname +'.pkl'):
 
