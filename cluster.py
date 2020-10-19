@@ -24,6 +24,7 @@ def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
 
         counts = np.array(np.unique(inst_labels[cluster_labels == i], return_counts= True))#number of occurences of each instrument inside the cluster.
 
+
         clustercounts = sum(counts[1])
 
         slices = [] #number of notes in each slice
@@ -35,7 +36,7 @@ def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
             label = counts[0][np.argmax(counts[1])]
 
             percent = int((slice/np.sum([inst_labels == label]) ) *100)#percentage of the instrument's notes represented in each slice
-            labels.append(str(inst_names[label])[:-4] + ' ' + str(percent) + '%')#inst_names starts from 1, labels of kmeans starts from 0 -> lab-1, labels of dendrogram from 0
+            labels.append(str(inst_names[label]) + ' ' + str(percent) + '%')#inst_names starts from 1, labels of kmeans starts from 0 -> lab-1, labels of dendrogram from 0
             counts = np.delete(counts, np.argmax(counts[1]), axis = 1)
 
         slices.append(np.sum(counts[1])) #'others'
@@ -44,6 +45,19 @@ def display_clusters(n_clusters, inst_labels, inst_names, cluster_labels):
 
         ax[np.argwhere(r == i)[0][0], np.argwhere(r == i)[0][1]].pie(slices, labels = labels, shadow = False, autopct='%.0f%%', textprops={'size': 'large'}, radius= (clustercounts/tot_counts) * n_clusters) #textprops={'size': 'smaller'}
         #[str(track_names[lab][1]) + str(track_names[lab][0]) for lab in labels] )
+
+    #test for each instrument in which cluster it is most, and put this cluster in instrumentclusterlabel
+    instrumentclusterlabels = []
+    for j in range(len(instruments)):
+        c = np.unique(cluster_labels[inst_labels == j],return_counts=True)#countingclusters for the instrument j
+        instrumentclusterlabels.append(c[0][np.argmax(c[1])])
+
+    #printing instrument clusters, each instrument belongs to the cluster in which there is most of its notes
+    instrumentclusterlabels = np.array(instrumentclusterlabels)
+    for k in range(n_clusters):
+        print('cluster '+ str(k))
+        inst_names = np.array(inst_names)
+        print(inst_names[instrumentclusterlabels == k])
 
     plt.show()
 
@@ -70,12 +84,10 @@ def trackstonotes_label(tracks):
 def feature_variance(tracks):
 
     allnotes = np.concatenate(list(tracks.values()), axis = 0)
-    print(allnotes.shape)
+
     intravariances = np.empty((len(tracks), allnotes.shape[1]))
     i=0
     for filename in tracks.keys():
-        print(filename)
-        print(tracks[filename].shape)
         intravariances[i] = np.std(tracks[filename], axis = 0)
         i = i+1
 
@@ -83,10 +95,8 @@ def feature_variance(tracks):
     #print('intervariance:' +'\n' + str(intervariance))
     meanintravariance = np.mean(intravariances, axis = 0)
     #print('intravariance:' +'\n'+ str(meanintravariance))
-    np.set_printoptions(suppress=True)
+    np.set_printoptions(suppress=True, precision = 3)
     print('intervariance/intravariance ratio:' + '\n' + str(intervariance/meanintravariance))
-
-
 
 
 def hierarchical_clustering(notes, inst_labels, inst_names):
@@ -123,7 +133,6 @@ def hierarchical_clustering(notes, inst_labels, inst_names):
 
 def aggregate(datadir):
     songdicts = os.listdir(datadir)
-    print(songdicts)
     instruments = {}
     for songdict in songdicts:
         filereader = open(datadir+'/'+songdict, 'rb')
@@ -134,12 +143,6 @@ def aggregate(datadir):
             instruments[inst] = np.concatenate((instruments[inst], song[inst]), axis = 0)
     return instruments
 
-def feature_table(features):
-    np.set_printoptions(precision = 4)
-    fig = go.Figure(data=[go.Table(header=dict(values=['zcr_mean','zcr_std']),
-                     cells=dict(values = features))])
-    fig.show()
-
 #READ FULL:
 #filereader = open('instruments.pkl', 'rb')
 #instruments = pickle.load(filereader)
@@ -148,6 +151,22 @@ def feature_table(features):
 instruments = aggregate('pre-results')
 notes, inst_labels, inst_names = trackstonotes_label(instruments)
 
+counts = np.unique(inst_labels, return_counts= True)
+sortedlabs = np.flip(counts[0][counts[1].argsort()])
+sortedcounts = np.flip(sorted(counts[1]))
+
+fig, ax = plt.subplots()
+ax.bar(np.arange(sortedcounts.shape[0]), sortedcounts)
+
+ax.set_xlabel('instruments')
+ax.set_title('Number of notes per instrument')
+
+plt.show()
+maxnum = 15
+plt.bar(np.arange(maxnum),sortedcounts[0:maxnum])
+plt.xticks(np.arange(maxnum), [inst_names[sortedlabs[i]] for i in range(maxnum)], rotation = 90)
+plt.title('Number of notes per instrument')
+plt.show()
 #Features:
 
 feature_variance(instruments)
@@ -158,10 +177,8 @@ notespca = notes/np.std(notes, axis = 0)
 
 pca = PCA().fit(notespca)
 print(pca.explained_variance_ratio_)
-print(pca.singular_values_)
 print(pca.components_)
 
-feature_table(pca.components_[0])
 #question: if we compute clusters with the same number as the number of tracks, can we refind tracks?
 #plot pca in 2d
 
@@ -169,17 +186,29 @@ feature_table(pca.components_[0])
 
 
 #Cluster:
-print(np.unique(inst_labels))
-hierarchical_clustering(notes, inst_labels, inst_names)
 
-'''
-#KMEANS CLUSTERING:
-nclusters = 10
+#hierarchical_clustering(notes, inst_labels, inst_names)
+
+#KMEANS of instruments:
+
+n_clusters = 5
+kmeansinst = KMeans(n_clusters = n_clusters).fit([np.mean(notes[inst_labels == i], axis=0) for i in range(len(inst_names))])# we cluster instruments
+print(kmeansinst.labels_)
+for i in range(n_clusters):
+    print('cluster ' + str(i) + '\n')
+    inds = (kmeansinst.labels_ == i)
+
+    inst_names = np.array(inst_names)
+    print(inst_names[kmeansinst.labels_ == i])
+
+
+#KMEANS CLUSTERING of notes:
+nclusters = 8
 kmeans = KMeans(n_clusters = nclusters).fit(notes)# we have 25 different tracks. for each tracks, we want to know which label kmeans put on them.
 
 display_clusters(nclusters, inst_labels, inst_names,  kmeans.labels_)
 
-'''
+
 
 '''
 #PCA_PLOTTING:

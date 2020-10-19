@@ -46,6 +46,7 @@ def calculate_note_features(note, sr, n_fft, pitch):
                                                                                stopFrequency=harmonicfreq[k] + (
                                                                                            percentage_bandwidth / 2))(
                 spectrum))
+            #print(harmonicpercentage)
 
         inharmonicity = np.append(inharmonicity, Inharmonicity()(harmonicfreq,
                                                               harmonicmag))  # should we first mean the frequencies and magnitudes, than give this to inharmonicity?
@@ -68,8 +69,10 @@ def calculate_track_features(filename, sr, C, n_fft):
     audio = normalize(audio)
 
     #we get limits and pitches from librosa
+    start = time.time()
     limits, pitchdisc = extractpitchlimitslibrosa(audio,sr,C)
-
+    stop = time.time()
+    print('preprocessing ' + str(stop-start))
     #noteharmonicpercentage = np.empty((limits.shape[0], 4, 2))
 
     features = np.empty((limits.shape[0], 19))
@@ -127,12 +130,18 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
 
     songnames = os.listdir(args.indir)
+    start = time.time()
+    calculate_tracks_features(songnames[0])
+    stop = time.time()
+    print(start-stop)
     #instruments = calculate_tracks_features(songnames, sr, C, n_fft)
 
+    '''
     #WITH THREADS
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
         start1 = time.time()
         executor.map(calculate_tracks_features, songnames)
+    '''
 
     '''
     for song in songs:
@@ -150,5 +159,5 @@ for songname in songnames:
     for inst in song.keys():
         instruments[inst] = song[inst]
 stop1 = time.time()
-'''
 
+'''

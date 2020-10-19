@@ -6,7 +6,6 @@ from preprocessing import *
 from features import *
 
 #names =['LeadVocal_chain.mp3', 'LeadVocal_september.mp3', 'guitar_chain.mp3', 'guitar_september.mp3', 'DrumKit_chain.mp3', 'DrumKit_september.mp3', 'Bass_chain.mp3', 'Bass_september.mp3']
-names =['LeadVocal_chain.mp3']
 
 sr = 44100
 C = 300
